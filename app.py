@@ -17,13 +17,34 @@ def _hash(pwd: str) -> str:
     return hashlib.sha256(pwd.encode()).hexdigest()
 
 USUARIOS = {
-    "wagner":   {"hash": _hash("Ind!o@W2026"),  "nome": "Wagner Antonelli", "cargo": "CEO"},
-    "carolina": {"hash": _hash("Ind!o@C2026"),  "nome": "Carolina Antonelli", "cargo": "Sócia"},
-    "david":    {"hash": _hash("Ind!o@D2026"),  "nome": "David Antonelli", "cargo": "Sócio"},
-    "roberta":  {"hash": _hash("Ind!o@R2026"),  "nome": "Dra. Roberta", "cargo": "Advogada"},
-    "cristina": {"hash": _hash("Ind!o@Cris26"), "nome": "Cristina", "cargo": "Contabilidade"},
-    "nicolas":  {"hash": _hash("Ind!o@N2026"),  "nome": "Nicolás", "cargo": "Diretor"},
+    "wagner":   {"hash": _hash("Ind!o@W2026"),  "nome": "Wagner Antonelli",  "cargo": "CEO",           "admin": True},
+    "carolina": {"hash": _hash("Ind!o@C2026"),  "nome": "Carolina Antonelli","cargo": "Sócia",         "admin": False},
+    "david":    {"hash": _hash("Ind!o@D2026"),  "nome": "David Antonelli",   "cargo": "Sócio",         "admin": False},
+    "roberta":  {"hash": _hash("Ind!o@R2026"),  "nome": "Dra. Roberta",      "cargo": "Advogada",      "admin": False},
+    "cristina": {"hash": _hash("Ind!o@Cris26"), "nome": "Cristina",          "cargo": "Contabilidade", "admin": False},
+    "nicolas":  {"hash": _hash("Ind!o@N2026"),  "nome": "Nicolás",           "cargo": "Diretor",       "admin": False},
 }
+
+def get_all_users():
+    """Mescla usuários fixos + extras cadastrados pelo admin (salvos nos secrets)."""
+    todos = dict(USUARIOS)
+    try:
+        extras = st.secrets.get("extra_users", {})
+        import json
+        for login, dados_str in extras.items():
+            try:
+                dados = json.loads(dados_str) if isinstance(dados_str, str) else dict(dados_str)
+                dados.setdefault("admin", False)
+                todos[login] = dados
+            except Exception:
+                pass
+    except Exception:
+        pass
+    return todos
+
+def is_admin():
+    u = st.session_state.get("usuario", "")
+    return get_all_users().get(u, {}).get("admin", False)
 
 # ─── SYSTEM PROMPT ────────────────────────────────────────────
 SYSTEM_PROMPT = """Você é o ÍNDIO JURÍDICO PRIME — sistema de inteligência jurídica estratégica de elite do Grupo Supermercado Índio (10 lojas no Rio Grande do Sul).
@@ -347,11 +368,12 @@ def login_screen():
 
         if entrar:
             u = usuario.strip().lower()
-            if u in USUARIOS and USUARIOS[u]["hash"] == _hash(senha):
+            todos = get_all_users()
+            if u in todos and todos[u]["hash"] == _hash(senha):
                 st.session_state.autenticado  = True
                 st.session_state.usuario      = u
-                st.session_state.usuario_nome = USUARIOS[u]["nome"]
-                st.session_state.usuario_cargo= USUARIOS[u]["cargo"]
+                st.session_state.usuario_nome = todos[u]["nome"]
+                st.session_state.usuario_cargo= todos[u]["cargo"]
                 st.session_state.messages     = []
                 st.rerun()
             else:
@@ -406,6 +428,53 @@ def render_sidebar():
             antes de qualquer uso jurídico.
         </div>
         """, unsafe_allow_html=True)
+
+        # ── PAINEL ADMIN ──────────────────────────────────────────
+        if is_admin():
+            st.markdown("---")
+            with st.expander("⚙️ PAINEL ADMIN — Usuários", expanded=False):
+                todos = get_all_users()
+                st.markdown("**Usuários cadastrados:**")
+                for login, u in todos.items():
+                    st.markdown(
+                        f"- `{login}` — {u['nome']} ({u['cargo']})"
+                        + (" 🔑 admin" if u.get("admin") else "")
+                    )
+
+                st.markdown("---")
+                st.markdown("**Cadastrar novo usuário:**")
+                with st.form("form_novo_usuario", clear_on_submit=True):
+                    novo_login  = st.text_input("Login (sem espaços, minúsculo)")
+                    novo_nome   = st.text_input("Nome completo")
+                    novo_cargo  = st.text_input("Cargo")
+                    nova_senha  = st.text_input("Senha", type="password")
+                    novo_admin  = st.checkbox("Administrador?")
+                    salvar = st.form_submit_button("➕ Criar usuário")
+
+                if salvar:
+                    login_clean = novo_login.strip().lower().replace(" ", "")
+                    if not login_clean or not novo_nome or not nova_senha:
+                        st.error("Preencha login, nome e senha.")
+                    elif login_clean in todos:
+                        st.error(f"Login '{login_clean}' já existe.")
+                    else:
+                        import json
+                        h = _hash(nova_senha)
+                        dados = {"hash": h, "nome": novo_nome.strip(),
+                                 "cargo": novo_cargo.strip(), "admin": novo_admin}
+                        st.success(f"✅ Usuário **{login_clean}** criado!")
+                        st.markdown("**Cole este bloco nos Secrets do Streamlit Cloud** (Settings → Secrets):")
+                        toml_atual = ""
+                        try:
+                            extras = st.secrets.get("extra_users", {})
+                            for k, v in extras.items():
+                                toml_atual += f'\n{k} = \'{v}\''
+                        except Exception:
+                            pass
+                        novo_toml = f'\n{login_clean} = \'{json.dumps(dados, ensure_ascii=False)}\''
+                        bloco = f'[extra_users]{toml_atual}{novo_toml}'
+                        st.code(bloco, language="toml")
+                        st.caption("Copie o bloco acima → Streamlit Cloud → ⚙️ Settings → Secrets → cole e salve.")
 
         st.markdown("<br>", unsafe_allow_html=True)
         if st.button("🚪  Sair", use_container_width=True):
