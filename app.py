@@ -565,7 +565,7 @@ Estou carregado com todo o conhecimento jurídico do **Grupo Supermercado Índio
                     ]
 
                     response = client.messages.create(
-                        model="claude-opus-4-5",
+                        model="claude-sonnet-4-5",
                         max_tokens=8096,
                         system=SYSTEM_PROMPT,
                         messages=messages_api
