@@ -317,6 +317,18 @@ def inject_css():
     }
     textarea { color: white !important; background: transparent !important; }
 
+    /* FORÇAR SIDEBAR SEMPRE VISÍVEL */
+    section[data-testid="stSidebar"] {
+        display: flex !important;
+        visibility: visible !important;
+        min-width: 280px !important;
+        max-width: 380px !important;
+        transform: none !important;
+        opacity: 1 !important;
+    }
+    [data-testid="collapsedControl"] { display: none !important; }
+    button[kind="header"] { display: none !important; }
+
     /* SIDEBAR */
     .sidebar-section {
         background: rgba(255,255,255,0.04);
