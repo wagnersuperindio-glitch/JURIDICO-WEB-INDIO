@@ -388,110 +388,83 @@ def login_screen():
 # ─── SIDEBAR ──────────────────────────────────────────────────
 def render_sidebar():
     with st.sidebar:
-        st.markdown("""
-        <div style='text-align:center;padding:16px 0 20px'>
-            <div style='font-size:26px;font-weight:900;color:#fff'>⚖️ ÍNDIO</div>
-            <div style='font-size:11px;color:#E65100;font-weight:700;letter-spacing:2px'>JURÍDICO PRIME</div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.title("⚖️ ÍNDIO JURÍDICO")
+        st.caption("SISTEMA DE INTELIGÊNCIA JURÍDICA")
+        st.divider()
 
         nome  = st.session_state.get("usuario_nome", "")
         cargo = st.session_state.get("usuario_cargo", "")
-        st.markdown(f"""
-        <div class="sidebar-section">
-            <div class="sidebar-label">Usuário conectado</div>
-            <div class="sidebar-value">{nome}</div>
-            <div style='font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px'>{cargo}</div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.success(f"👤 {nome}\n\n*{cargo}*")
+        st.divider()
 
-        st.markdown("""
-        <div class="sidebar-section">
-            <div class="sidebar-label">Comandos rápidos</div>
-            <div class="cmd-item"><div class="cmd-code">analise: [doc]</div><div class="cmd-desc">Fluxo completo 9 etapas</div></div>
-            <div class="cmd-item"><div class="cmd-code">urgente: [doc]</div><div class="cmd-desc">Prazo &lt; 48h — minuta imediata</div></div>
-            <div class="cmd-item"><div class="cmd-code">furos: [processo]</div><div class="cmd-desc">Fragilidades da parte contrária</div></div>
-            <div class="cmd-item"><div class="cmd-code">jurisprudencia: [tese]</div><div class="cmd-desc">Busca nos tribunais</div></div>
-            <div class="cmd-item"><div class="cmd-code">tributario: [situação]</div><div class="cmd-desc">Análise fiscal + oportunidades</div></div>
-            <div class="cmd-item"><div class="cmd-code">contrato: [doc]</div><div class="cmd-desc">Análise contratual completa</div></div>
-            <div class="cmd-item"><div class="cmd-code">notificacao: [situação]</div><div class="cmd-desc">Notificação extrajudicial</div></div>
-            <div class="cmd-item"><div class="cmd-code">preventivo: [loja]</div><div class="cmd-desc">Compliance trabalhista</div></div>
-            <div class="cmd-item"><div class="cmd-code">acordo: [processo]</div><div class="cmd-desc">Custo-benefício acordo vs litígio</div></div>
-        </div>
-        """, unsafe_allow_html=True)
+        st.markdown("**📋 COMANDOS RÁPIDOS**")
+        st.info("`analise: [doc]` — Fluxo completo 9 etapas")
+        st.info("`urgente: [doc]` — Prazo < 48h")
+        st.info("`furos: [processo]` — Fragilidades da parte contrária")
+        st.info("`jurisprudencia: [tese]` — Busca nos tribunais")
+        st.info("`tributario: [situação]` — Análise fiscal")
+        st.info("`contrato: [doc]` — Análise contratual")
+        st.info("`notificacao: [situação]` — Notificação extrajudicial")
+        st.info("`preventivo: [loja]` — Compliance trabalhista")
+        st.info("`acordo: [processo]` — Custo-benefício acordo")
+        st.divider()
 
-        st.markdown("""
-        <div class="aviso-legal">
-            ⚠️ <strong style='color:#FFB74D'>AVISO LEGAL</strong><br>
-            Toda peça gerada é <strong style='color:#fff'>MINUTA TÉCNICA</strong>.
-            Revisão, validação e protocolo obrigatórios pela <strong style='color:#fff'>Dra. Roberta</strong>
-            antes de qualquer uso jurídico.
-        </div>
-        """, unsafe_allow_html=True)
+        st.warning("⚠️ **AVISO LEGAL**\n\nToda peça gerada é **MINUTA TÉCNICA**. Revisão obrigatória pela Dra. Roberta antes do uso.")
 
         # ── PAINEL ADMIN ──────────────────────────────────────────
         if is_admin():
-            st.markdown("---")
-            with st.expander("⚙️ PAINEL ADMIN — Usuários", expanded=False):
+            st.divider()
+            with st.expander("⚙️ PAINEL ADMIN — Usuários"):
                 todos = get_all_users()
                 st.markdown("**Usuários cadastrados:**")
                 for login, u in todos.items():
-                    st.markdown(
-                        f"- `{login}` — {u['nome']} ({u['cargo']})"
-                        + (" 🔑 admin" if u.get("admin") else "")
-                    )
+                    adm = " 🔑" if u.get("admin") else ""
+                    st.markdown(f"- `{login}` — {u['nome']} ({u['cargo']}){adm}")
 
                 st.markdown("---")
-                st.markdown("**Cadastrar novo usuário:**")
+                st.markdown("**➕ Novo usuário:**")
                 with st.form("form_novo_usuario", clear_on_submit=True):
-                    novo_login  = st.text_input("Login (sem espaços, minúsculo)")
-                    novo_nome   = st.text_input("Nome completo")
-                    novo_cargo  = st.text_input("Cargo")
-                    nova_senha  = st.text_input("Senha", type="password")
-                    novo_admin  = st.checkbox("Administrador?")
-                    salvar = st.form_submit_button("➕ Criar usuário")
+                    novo_login = st.text_input("Login (minúsculo, sem espaço)")
+                    novo_nome  = st.text_input("Nome completo")
+                    novo_cargo = st.text_input("Cargo")
+                    nova_senha = st.text_input("Senha", type="password")
+                    novo_admin = st.checkbox("Administrador?")
+                    salvar = st.form_submit_button("Criar usuário")
 
                 if salvar:
+                    import json
                     login_clean = novo_login.strip().lower().replace(" ", "")
                     if not login_clean or not novo_nome or not nova_senha:
                         st.error("Preencha login, nome e senha.")
                     elif login_clean in todos:
                         st.error(f"Login '{login_clean}' já existe.")
                     else:
-                        import json
-                        h = _hash(nova_senha)
-                        dados = {"hash": h, "nome": novo_nome.strip(),
+                        dados = {"hash": _hash(nova_senha), "nome": novo_nome.strip(),
                                  "cargo": novo_cargo.strip(), "admin": novo_admin}
-                        st.success(f"✅ Usuário **{login_clean}** criado!")
-                        st.markdown("**Cole este bloco nos Secrets do Streamlit Cloud** (Settings → Secrets):")
+                        st.success(f"✅ {login_clean} criado!")
                         toml_atual = ""
                         try:
-                            extras = st.secrets.get("extra_users", {})
-                            for k, v in extras.items():
+                            for k, v in st.secrets.get("extra_users", {}).items():
                                 toml_atual += f'\n{k} = \'{v}\''
                         except Exception:
                             pass
-                        novo_toml = f'\n{login_clean} = \'{json.dumps(dados, ensure_ascii=False)}\''
-                        bloco = f'[extra_users]{toml_atual}{novo_toml}'
+                        bloco = f'[extra_users]{toml_atual}\n{login_clean} = \'{json.dumps(dados, ensure_ascii=False)}\''
                         st.code(bloco, language="toml")
-                        st.caption("Copie o bloco acima → Streamlit Cloud → ⚙️ Settings → Secrets → cole e salve.")
+                        st.caption("Copie → Streamlit Cloud → Settings → Secrets → cole e salve.")
 
-        st.markdown("<br>", unsafe_allow_html=True)
-        if st.button("🚪  Sair", use_container_width=True):
-            for k in ["autenticado","usuario","usuario_nome","usuario_cargo","messages"]:
-                st.session_state.pop(k, None)
-            st.rerun()
+        st.divider()
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("🚪 Sair", use_container_width=True):
+                for k in ["autenticado","usuario","usuario_nome","usuario_cargo","messages"]:
+                    st.session_state.pop(k, None)
+                st.rerun()
+        with col2:
+            if st.button("🗑️ Limpar", use_container_width=True):
+                st.session_state.messages = []
+                st.rerun()
 
-        if st.button("🗑️  Limpar conversa", use_container_width=True):
-            st.session_state.messages = []
-            st.rerun()
-
-        st.markdown("""
-        <div style='font-size:10px;color:rgba(255,255,255,0.2);text-align:center;margin-top:20px'>
-            Índio Jurídico Prime v3.0<br>
-            Grupo Supermercado Índio — RS
-        </div>
-        """, unsafe_allow_html=True)
+        st.caption("Índio Jurídico Prime v3.0 | Grupo Índio RS")
 
 # ─── CHAT PRINCIPAL ───────────────────────────────────────────
 def chat_screen():
